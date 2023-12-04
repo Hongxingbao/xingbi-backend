@@ -30,5 +30,15 @@ public interface UserConstant {
      */
     String BAN_ROLE = "ban";
 
+    /**
+     * 默认名字
+     */
+    String DEFAULT_NAME = "无名氏";
+
+    /**
+     * 默认头像
+     */
+    String DEFAULT_AVATAR = "https://photo.16pic.com/00/66/33/16pic_6633760_b.jpg";
+
     // endregion
 }

@@ -1,7 +1,5 @@
 package com.sing.init.service.impl;
 
-import static com.sing.init.constant.UserConstant.USER_LOGIN_STATE;
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -26,6 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import static com.sing.init.constant.UserConstant.*;
 
 /**
  * @author 24840
@@ -71,6 +71,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             User user = new User();
             user.setUserAccount(userAccount);
             user.setUserPassword(encryptPassword);
+            user.setUserAvatar(DEFAULT_AVATAR);
+            user.setUserName(DEFAULT_NAME);
             boolean saveResult = this.save(user);
             if (!saveResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
