@@ -88,3 +88,7 @@ cos:
     secretKey: xxx
     region: xxx
     bucket: xxx
+yuapi:
+  client:
+    access-key: qx44zbe77j2fnzlcza89fos6lfcvmxor
+    secret-key: 4cyyjizj2mlx6mdv0nx2jk3b8gjk4aa9
