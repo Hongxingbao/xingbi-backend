@@ -1,5 +1,6 @@
 package com.sing.init.common;
 
+import cn.hutool.json.JSON;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,7 +18,7 @@ public class BiResponse<T> implements Serializable {
     /**
      * 图表数据
      */
-    private String genChart;
+    private JSON genChart;
 
     /**
      * 分析结论

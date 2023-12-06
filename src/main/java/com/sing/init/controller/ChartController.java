@@ -1,5 +1,7 @@
 package com.sing.init.controller;
 
+import cn.hutool.json.JSON;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
@@ -272,7 +274,10 @@ public class ChartController {
         ThrowUtils.throwIf(!saverResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
 
         BiResponse biResponse = new BiResponse();
-        biResponse.setGenChart(genChartData);
+        ThrowUtils.throwIf(StringUtils.isBlank(genChartData),ErrorCode.SYSTEM_ERROR,"图表代码生成错误");
+        //对ai生成的代码解析成json对象返回给前端
+        JSON genChartDataJson = JSONUtil.parse(genChartData);
+        biResponse.setGenChart(genChartDataJson);
         biResponse.setGenResult(genChartResult);
         biResponse.setChartId(chart.getId());
 
