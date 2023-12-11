@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Spring MVC Json 配置
+ * RedissonClient 配置
  *
  * @author xing
  */
@@ -28,7 +28,7 @@ public class RedissonConfig {
 
 
     /**
-     * 添加 Long 转 json 精度丢失的配置
+     * 添加 RedissonClient 配置
      */
     @Bean
     public RedissonClient getRedissonConfig() {
