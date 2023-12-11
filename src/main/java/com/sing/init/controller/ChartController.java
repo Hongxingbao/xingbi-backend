@@ -1,5 +1,6 @@
 package com.sing.init.controller;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -33,6 +34,10 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 图表信息接口
@@ -154,6 +159,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/list/page")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<Chart>> listChartVOByPage(@RequestBody ChartQueryRequest chartQueryRequest,
                                                        HttpServletRequest request) {
         long current = chartQueryRequest.getCurrent();
@@ -229,6 +235,20 @@ public class ChartController {
     @PostMapping("/gen")
     public BaseResponse<BiResponse> analysisBySynchronize(@RequestPart("file") MultipartFile multipartFile,
                                                           GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        //对文件大小和类型进行限制
+
+        // 文件名
+        String fileName = multipartFile.getOriginalFilename();
+        // 文件大小
+        long size = multipartFile.getSize();
+        final long longSize = 1024*1024*2L;
+
+        ThrowUtils.throwIf(size>longSize,ErrorCode.PARAMS_ERROR,"文件大小超过2M！");
+        final List validFileSuffix = Arrays.asList("xls","xlsx","xlsm");
+        // 文件后缀名
+        String suffix = FileUtil.getSuffix(fileName);
+        ThrowUtils.throwIf(!validFileSuffix.contains(suffix),ErrorCode.PARAMS_ERROR,"文件后缀不合法！");
+
         String goal = genChartByAiRequest.getGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
@@ -261,6 +281,7 @@ public class ChartController {
         //分析结论
         String genChartResult = split[2].trim();
 
+        //对ai生成的代码解析成json对象返回给前端
         Chart chart = new Chart();
         chart.setGoal(goal);
         chart.setChartName(chartName);
@@ -273,10 +294,10 @@ public class ChartController {
         boolean saverResult = chartService.save(chart);
         ThrowUtils.throwIf(!saverResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
 
+        JSON genChartDataJson = JSONUtil.parse(genChartData);
         BiResponse biResponse = new BiResponse();
         ThrowUtils.throwIf(StringUtils.isBlank(genChartData),ErrorCode.SYSTEM_ERROR,"图表代码生成错误");
-        //对ai生成的代码解析成json对象返回给前端
-        JSON genChartDataJson = JSONUtil.parse(genChartData);
+
         biResponse.setGenChart(genChartDataJson);
         biResponse.setGenResult(genChartResult);
         biResponse.setChartId(chart.getId());
