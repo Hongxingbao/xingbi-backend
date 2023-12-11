@@ -14,6 +14,7 @@ import com.sing.init.constant.UserConstant;
 import com.sing.init.exception.BusinessException;
 import com.sing.init.exception.ThrowUtils;
 import com.sing.init.manager.AiManager;
+import com.sing.init.manager.RedisLimiterManager;
 import com.sing.init.model.dto.chart.*;
 import com.sing.init.model.dto.file.UploadFileRequest;
 import com.sing.init.model.entity.Chart;
@@ -57,6 +58,9 @@ public class ChartController {
 
     @Resource
     private AiManager aiManager;
+
+    @Resource
+    private RedisLimiterManager redisLimiterManager;
 
     private final static Gson GSON = new Gson();
 
@@ -260,6 +264,8 @@ public class ChartController {
 
         StringBuilder input = new StringBuilder();
         User loginUser = userService.getLoginUser(request);
+        // 添加限流器,每秒最多允许两个请求通过
+        redisLimiterManager.doRateLimit("analysisBySynchronize"+loginUser.getId());
         long modelId = 1731965085540634626L;
 
         //构建提问内容
