@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sing.init.annotation.AuthCheck;
+import com.sing.init.bimq.BiMessageProducer;
 import com.sing.init.common.*;
 import com.sing.init.config.ThreadPoolExecutorConfig;
 import com.sing.init.constant.ChartConstant;
@@ -60,6 +61,9 @@ public class ChartController {
 
     @Resource
     private ThreadPoolExecutor threadPoolExecutor;
+
+    @Resource
+    private BiMessageProducer biMessageProducer;
 
     /**
      * 创建
@@ -226,7 +230,7 @@ public class ChartController {
     }
 
     /**
-     * 对表内容进行智能分析（同步）
+     * 对表内容进行智能分析，可以实时查看分析结论（同步）
      *
      * @param multipartFile
      * @param genChartByAiRequest
@@ -237,35 +241,21 @@ public class ChartController {
     public BaseResponse<BiResponse> analysisBySynchronize(@RequestPart("file") MultipartFile multipartFile,
                                                           GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //对文件大小和类型进行限制
-
-        // 文件名
         fileCheck(multipartFile);
+        User loginUser = userService.getLoginUser(request);
+        // 添加限流器,每秒最多允许两个请求通过
+        redisLimiterManager.doRateLimit("analysisBySynchronize" + loginUser.getId());
 
         String goal = genChartByAiRequest.getGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
 
-        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
-        ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
         //要分析的csv数据
         String csvData = ExcelUtils.excelToCsv(multipartFile);
-
-        StringBuilder input = new StringBuilder();
-        User loginUser = userService.getLoginUser(request);
-        // 添加限流器,每秒最多允许两个请求通过
-        redisLimiterManager.doRateLimit("analysisBySynchronize" + loginUser.getId());
-
-        //构建提问内容
-        if (StringUtils.isNotBlank(chartType)) {
-            input.append("分析目标：").append(goal + "请使用：").append(chartType).append("\n");
-        } else {
-            input.append("分析目标：").append(goal).append("\n");
-        }
-        input.append("原始数据：").append("\n");
-        input.append(csvData).append("\n");
+        String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
 
         //返回结果
-        String result = aiManager.dochat(ChartConstant.MODEL_ID, input.toString());
+        String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString());
 
         String[] split = result.split("【【【【【");
         ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
@@ -283,7 +273,7 @@ public class ChartController {
         chart.setGenChart(genChartData);
         chart.setGenResult(genChartResult);
         chart.setUserId(loginUser.getId());
-        chart.setStatus("succeed");
+        chart.setStatus(ChartConstant.SUCCEED_STATUS);
         //保存到数据库中
         boolean saverResult = chartService.save(chart);
         ThrowUtils.throwIf(!saverResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
@@ -311,31 +301,18 @@ public class ChartController {
     public BaseResponse<BiResponse> analysisByAsync(@RequestPart("file") MultipartFile multipartFile,
                                                     GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //对文件大小和类型进行限制
-
         fileCheck(multipartFile);
+        User loginUser = userService.getLoginUser(request);
+        // 添加限流器,每秒最多允许两个请求通过
+        redisLimiterManager.doRateLimit("analysisBySynchronize" + loginUser.getId());
 
         String goal = genChartByAiRequest.getGoal();
         String chartName = genChartByAiRequest.getChartName();
         String chartType = genChartByAiRequest.getChartType();
 
-        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
-        ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
         //要分析的csv数据
         String csvData = ExcelUtils.excelToCsv(multipartFile);
-
-        StringBuilder input = new StringBuilder();
-        User loginUser = userService.getLoginUser(request);
-        // 添加限流器,每秒最多允许两个请求通过
-        redisLimiterManager.doRateLimit("analysisBySynchronize" + loginUser.getId());
-
-        //构建提问内容
-        if (StringUtils.isNotBlank(chartType)) {
-            input.append("分析目标：").append(goal + "请使用：").append(chartType).append("\n");
-        } else {
-            input.append("分析目标：").append(goal).append("\n");
-        }
-        input.append("原始数据：").append("\n");
-        input.append(csvData).append("\n");
+        String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
 
         //对ai生成的代码解析成json对象返回给前端
         Chart chart = new Chart();
@@ -346,7 +323,7 @@ public class ChartController {
         // chart.setGenChart(genChartData);
         // chart.setGenResult(genChartResult);
         chart.setUserId(loginUser.getId());
-        chart.setStatus("wait");
+        chart.setStatus(ChartConstant.WAIT_STATUS);
         //保存到数据库中
         boolean saverResult = chartService.save(chart);
         ThrowUtils.throwIf(!saverResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
@@ -361,7 +338,7 @@ public class ChartController {
             }
 
             //调用AI
-            String result = aiManager.dochat(ChartConstant.MODEL_ID, input.toString());
+            String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString());
             String[] split = result.split("【【【【【");
             ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
             //图表信息
@@ -383,6 +360,52 @@ public class ChartController {
         return ResultUtils.success(biResponse);
     }
 
+    /**
+     * 对表内容进行智能分析（异步消息队列）
+     *
+     * @param multipartFile
+     * @param genChartByAiRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/gen/async/mq")
+    public BaseResponse<BiResponse> analysisByAsyncMq(@RequestPart("file") MultipartFile multipartFile,
+                                                        GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        //对文件大小和类型进行限制
+        fileCheck(multipartFile);
+
+        String goal = genChartByAiRequest.getGoal();
+        String chartName = genChartByAiRequest.getChartName();
+        String chartType = genChartByAiRequest.getChartType();
+
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
+        //要分析的csv数据
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+
+        User loginUser = userService.getLoginUser(request);
+        // 添加限流器,每秒最多允许两个请求通过
+        redisLimiterManager.doRateLimit("analysisBySynchronize" + loginUser.getId());
+
+        // 插入到数据库
+        Chart chart = new Chart();
+        chart.setChartName(chartName);
+        chart.setGoal(goal);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setStatus(ChartConstant.WAIT_STATUS);
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
+        long newChartId = chart.getId();
+        //将消息传给生产者,由消费端进行处理
+        biMessageProducer.sendMessage(String.valueOf(newChartId));
+        BiResponse biResponse = new BiResponse();
+        biResponse.setChartId(newChartId);
+        return ResultUtils.success(biResponse);
+    }
+
+
     private static void fileCheck(MultipartFile multipartFile) {
         // 文件名
         String fileName = multipartFile.getOriginalFilename();
@@ -397,6 +420,30 @@ public class ChartController {
         ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀不合法！");
     }
 
+    /**
+     * 构建用户输入
+     * @param chart
+     * @return
+     */
+    private String buildUserInput(String goal,String chartType,MultipartFile multipartFile,String chartName) {
+
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
+
+        //要分析的csv数据
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        StringBuilder userInput = new StringBuilder();
+        //构建提问内容
+        if (StringUtils.isNotBlank(chartType)) {
+            userInput.append("分析目标：").append(goal + "请使用：").append(chartType).append("\n");
+        } else {
+            userInput.append("分析目标：").append(goal).append("\n");
+        }
+        userInput.append("原始数据：").append("\n");
+        userInput.append(csvData).append("\n");
+
+        return userInput.toString();
+    }
 
     /**
      * 获取查询包装类
