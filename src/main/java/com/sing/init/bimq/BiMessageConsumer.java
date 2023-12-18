@@ -7,6 +7,7 @@ import com.sing.init.exception.BusinessException;
 import com.sing.init.manager.AiManager;
 import com.sing.init.model.entity.Chart;
 import com.sing.init.service.ChartService;
+import com.sing.init.websocket.WebSocketServer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +24,8 @@ public class BiMessageConsumer {
 
     @Resource
     private ChartService chartService;
+    @Resource
+    private WebSocketServer webSocketServer;
 
     @Resource
     private AiManager aiManager;
@@ -73,6 +76,7 @@ public class BiMessageConsumer {
             channel.basicNack(deliveryTag, false, false);
             handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
         }
+        webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
         // 消息确认
         channel.basicAck(deliveryTag, false);
     }
@@ -106,8 +110,9 @@ public class BiMessageConsumer {
         Chart updateChartResult = new Chart();
         updateChartResult.setId(chartId);
         updateChartResult.setStatus(ChartConstant.FAILED_STATUS);
-        updateChartResult.setExecMessage("execMessage");
+        updateChartResult.setExecMessage(execMessage);
         boolean updateResult = chartService.updateById(updateChartResult);
+        webSocketServer.sendToAllClient("糟糕，好像出了点问题~");
         if (!updateResult) {
             log.error("更新图表失败状态失败" + chartId + "," + execMessage);
         }

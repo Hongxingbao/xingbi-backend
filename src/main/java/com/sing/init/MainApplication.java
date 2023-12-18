@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 
 /**
  * 主类（项目启动入口）
@@ -17,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan("com.sing.init.mapper")
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
+@EnableWebSocket
 public class MainApplication {
 
     public static void main(String[] args) {
