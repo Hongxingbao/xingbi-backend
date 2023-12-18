@@ -23,9 +23,9 @@ public class ChartUpdateRequest implements Serializable {
     private Long id;
 
     /**
-     * 名称
+     * 图表名称
      */
-    private String name;
+    private String chartName;
 
     /**
      * 分析目标
