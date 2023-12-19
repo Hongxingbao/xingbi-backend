@@ -18,6 +18,7 @@ import com.sing.init.model.dto.user.UserUpdateRequest;
 import com.sing.init.model.entity.User;
 import com.sing.init.model.vo.LoginUserVO;
 import com.sing.init.model.vo.UserVO;
+import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
 import java.util.List;
 import javax.annotation.Resource;
@@ -45,10 +46,6 @@ public class UserController {
 
     @Resource
     private UserService userService;
-
-
-
-    // region 登录相关
 
     /**
      * 用户注册

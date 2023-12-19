@@ -443,7 +443,10 @@ public class ChartController {
 
     /**
      * 构建用户输入
-     * @param chart
+     * @param goal
+     * @param chartType
+     * @param multipartFile
+     * @param chartName
      * @return
      */
     private String buildUserInput(String goal,String chartType,MultipartFile multipartFile,String chartName) {

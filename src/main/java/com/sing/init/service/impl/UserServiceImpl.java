@@ -6,17 +6,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sing.init.common.ErrorCode;
 import com.sing.init.constant.CommonConstant;
 import com.sing.init.exception.BusinessException;
+import com.sing.init.exception.ThrowUtils;
 import com.sing.init.mapper.UserMapper;
 import com.sing.init.model.dto.user.UserQueryRequest;
+import com.sing.init.model.entity.Score;
 import com.sing.init.model.entity.User;
 import com.sing.init.model.enums.UserRoleEnum;
 import com.sing.init.model.vo.LoginUserVO;
 import com.sing.init.model.vo.UserVO;
+import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
 import com.sing.init.utils.SqlUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
@@ -40,6 +44,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 盐值，混淆密码
      */
     private static final String SALT = "sing";
+
+    @Resource
+    private ScoreService scoreService;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -77,6 +84,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (!saveResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
             }
+            //注册成功后往Score表插入数据
+            Score score = new Score();
+            //未签到
+            score.setIsSign(0);
+            //初始积分100分
+            score.setScoreTotal(100l);
+            score.setUserId(user.getId());
+            boolean scoreResult = scoreService.save(score);
+            ThrowUtils.throwIf(!scoreResult,ErrorCode.OPERATION_ERROR,"注册积分异常");
             return user.getId();
         }
     }
