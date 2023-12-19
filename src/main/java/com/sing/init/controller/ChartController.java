@@ -26,6 +26,11 @@ import com.sing.init.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.RedissonMap;
+import org.redisson.api.MapOptions;
+import org.redisson.api.RBucket;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 图表信息接口
@@ -64,6 +70,9 @@ public class ChartController {
 
     @Resource
     private BiMessageProducer biMessageProducer;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     /**
      * 创建
@@ -195,9 +204,21 @@ public class ChartController {
         long size = chartQueryRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        Page<Chart> chartPage = chartService.page(new Page<>(current, size),
+        Page<Chart> chartPage = new Page<Chart>();
+        // 检查缓存
+        String cacheKey = "ChartController_listMyChartVOByPage_"+chartQueryRequest.getId();
+        RMap<String, Object> cachedResult = getCachedResult(cacheKey);
+        if (cachedResult.size()>0) {
+            chartPage  = (Page<Chart>)cachedResult.get(cacheKey);
+            return ResultUtils.success(chartPage);
+        }
+        // 如果缓存中没有结果，则查询数据库
+        chartPage = chartService.page(new Page<>(current, size),
                 getQueryWrapper(chartQueryRequest));
+        // 将查询结果放入缓存
+        putCachedResult(cacheKey, chartPage);
         return ResultUtils.success(chartPage);
+
     }
 
     /**
@@ -482,6 +503,19 @@ public class ChartController {
         chart.setExecMessage(message);
         boolean isSave = chartService.updateById(chart);
         ThrowUtils.throwIf(!isSave, ErrorCode.SYSTEM_ERROR, "更新图表状态为失败出错了！");
+    }
+
+    private RMap<String,Object> getCachedResult(String cacheKey) {
+        RMap<String, Object> cache = redissonClient.getMap(cacheKey);
+        return cache;
+    }
+
+    private void putCachedResult(String cacheKey, Page<Chart> chartPage) {
+        //使用Redisson提供的getMap方法从RedissonClient中获取一个RMap实例。
+        RMap<String, Object> cache = redissonClient.getMap(cacheKey, MapOptions.defaults());
+        cache.put(cacheKey,chartPage);
+        //60秒清空一次缓存
+        cache.expire(60L, TimeUnit.SECONDS);
     }
 
 }
