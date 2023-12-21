@@ -21,11 +21,16 @@ import com.sing.init.model.vo.UserVO;
 import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import com.sing.init.utils.BaseContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.MapOptions;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +51,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     /**
      * 用户注册
@@ -86,6 +94,14 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        BaseContext.setCurrentId(loginUserVO.getId());
+        log.info("用户id："+BaseContext.getCurrentId());
+        request.getSession().setAttribute("userid", BaseContext.getCurrentId());
+        Long userid = (Long) request.getSession().getAttribute("userid");
+        log.info("用户id是：" + userid);
+
+        RMap<String, Object> cache = redissonClient.getMap(String.valueOf(loginUserVO.getId()), MapOptions.defaults());
+        cache.put(String.valueOf(loginUserVO.getId()),loginUserVO);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -101,6 +117,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean result = userService.userLogout(request);
+        BaseContext.removeCurrentId();
         return ResultUtils.success(result);
     }
 

@@ -38,7 +38,7 @@ public interface UserConstant {
     /**
      * 默认头像
      */
-    String DEFAULT_AVATAR = "https://photo.16pic.com/00/66/33/16pic_6633760_b.jpg";
+    String DEFAULT_AVATAR = "https://dn-qiniu-avatar.qbox.me/avatar/";
 
     // endregion
 }

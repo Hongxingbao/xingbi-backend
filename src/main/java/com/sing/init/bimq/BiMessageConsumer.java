@@ -11,6 +11,8 @@ import com.sing.init.websocket.WebSocketServer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RKeys;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -30,6 +32,9 @@ public class BiMessageConsumer {
     @Resource
     private AiManager aiManager;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     // 指定程序监听的消息队列和确认机制
     @SneakyThrows
     @RabbitListener(queues = {BiMqConstant.BI_QUEUE_NAME}, ackMode = "MANUAL")
@@ -40,7 +45,13 @@ public class BiMessageConsumer {
             channel.basicNack(deliveryTag, false, false);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "消息为空");
         }
-        long chartId = Long.parseLong(message);
+        String[] split = message.split("_");
+        String strChartId = split[0];
+        String strUserId = split[1];
+
+        long chartId = Long.parseLong(strChartId);
+        long userId = Long.parseLong(strUserId);
+
         Chart chart = chartService.getById(chartId);
         if (chart == null) {
             channel.basicNack(deliveryTag, false, false);
@@ -57,7 +68,7 @@ public class BiMessageConsumer {
             return;
         }
         // 调用 AI
-        String result = aiManager.dochat(ChartConstant.MODEL_ID, buildUserInput(chart));
+        String result = aiManager.dochat(ChartConstant.MODEL_ID, buildUserInput(chart), userId);
         String[] splits = result.split("【【【【【");
         if (splits.length < 3) {
             channel.basicNack(deliveryTag, false, false);
@@ -77,12 +88,32 @@ public class BiMessageConsumer {
             handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
         }
         webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
+//        //手动清除缓存，避免拿到旧数据
+//        String cacheKey = "ChartController_listMyChartVOByPage";
+//        clearCacheByPattern(cacheKey);
         // 消息确认
         channel.basicAck(deliveryTag, false);
     }
 
     /**
+     * 清除缓存
+     *
+     * @param pattern
+     */
+    public void clearCacheByPattern(String pattern) {
+        RKeys keys = redissonClient.getKeys();
+        Iterable<String> matchingKeys = keys.getKeysByPattern(pattern + "*");
+        if (matchingKeys != null) {
+            for (String matchingKey : matchingKeys) {
+                // 删除匹配的键
+                redissonClient.getKeys().delete(matchingKey);
+            }
+        }
+    }
+
+    /**
      * 构建用户输入
+     *
      * @param chart
      * @return
      */

@@ -43,7 +43,7 @@ public class ScoreController {
 
     /**
      * 用于签到时添加积分
-     * @param userId
+     * @param request
      * @return
      */
     @PostMapping("/checkIn")

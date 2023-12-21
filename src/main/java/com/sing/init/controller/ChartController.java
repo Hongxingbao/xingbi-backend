@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sing.init.annotation.AuthCheck;
 import com.sing.init.bimq.BiMessageProducer;
 import com.sing.init.common.*;
-import com.sing.init.config.ThreadPoolExecutorConfig;
 import com.sing.init.constant.ChartConstant;
 import com.sing.init.constant.CommonConstant;
 import com.sing.init.constant.UserConstant;
@@ -21,14 +20,13 @@ import com.sing.init.model.entity.Chart;
 import com.sing.init.model.entity.User;
 import com.sing.init.service.ChartService;
 import com.sing.init.service.UserService;
+import com.sing.init.utils.ClearCache;
 import com.sing.init.utils.ExcelUtils;
 import com.sing.init.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.RedissonMap;
 import org.redisson.api.MapOptions;
-import org.redisson.api.RBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
@@ -73,6 +71,9 @@ public class ChartController {
 
     @Resource
     private RedissonClient redissonClient;
+
+    @Resource
+    private ClearCache cache;
 
     /**
      * 创建
@@ -205,11 +206,11 @@ public class ChartController {
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<Chart> chartPage = new Page<Chart>();
-        // 检查缓存
-        String cacheKey = "ChartController_listMyChartVOByPage_"+chartQueryRequest.getId();
+        // 检查缓存,保证每次点击缓存的数据不一样，否则会导致点击不同页数返回的数据相同
+        String cacheKey = "ChartController_listMyChartVOByPage" + current + size;
         RMap<String, Object> cachedResult = getCachedResult(cacheKey);
-        if (cachedResult.size()>0) {
-            chartPage  = (Page<Chart>)cachedResult.get(cacheKey);
+        if (cachedResult.size() > 0) {
+            chartPage = (Page<Chart>) cachedResult.get(cacheKey);
             return ResultUtils.success(chartPage);
         }
         // 如果缓存中没有结果，则查询数据库
@@ -276,7 +277,7 @@ public class ChartController {
         String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
 
         //返回结果
-        String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString());
+        String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString(), loginUser.getId());
 
         String[] split = result.split("【【【【【");
         ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
@@ -348,18 +349,20 @@ public class ChartController {
         //保存到数据库中
         boolean saverResult = chartService.save(chart);
         ThrowUtils.throwIf(!saverResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
-
-        CompletableFuture.runAsync(()->{
+        //手动清除缓存，避免拿到旧数据
+        String cacheKey = "ChartController_listMyChartVOByPage";
+        cache.clearCacheByPattern(cacheKey);
+        CompletableFuture.runAsync(() -> {
             Chart updateChartRunning = new Chart();
             updateChartRunning.setId(chart.getId());
             updateChartRunning.setStatus(ChartConstant.RUNNING_STATUS);
             boolean chartResult = chartService.updateById(updateChartRunning);
-            if(!chartResult){
-                updateChartError(chart.getId(),"更新图表状态为执行中出错了");
+            if (!chartResult) {
+                updateChartError(chart.getId(), "更新图表状态为执行中出错了");
             }
 
             //调用AI
-            String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString());
+            String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString(), loginUser.getId());
             String[] split = result.split("【【【【【");
             ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
             //图表信息
@@ -372,10 +375,10 @@ public class ChartController {
             updateChartSucceed.setGenResult(genChartResult);
             updateChartSucceed.setStatus(ChartConstant.SUCCEED_STATUS);
             boolean updateResult = chartService.updateById(updateChartSucceed);
-            if(!updateResult){
-                updateChartError(chart.getId(),"更新图表状态为成功出错了");
+            if (!updateResult) {
+                updateChartError(chart.getId(), "更新图表状态为成功出错了");
             }
-        },threadPoolExecutor);
+        }, threadPoolExecutor);
         BiResponse biResponse = new BiResponse();
         biResponse.setChartId(chart.getId());
         return ResultUtils.success(biResponse);
@@ -391,7 +394,7 @@ public class ChartController {
      */
     @PostMapping("/gen/async/mq")
     public BaseResponse<BiResponse> analysisByAsyncMq(@RequestPart("file") MultipartFile multipartFile,
-                                                        GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+                                                      GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         //对文件大小和类型进行限制
         fileCheck(multipartFile);
 
@@ -419,13 +422,15 @@ public class ChartController {
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
         long newChartId = chart.getId();
+        //手动清除缓存，避免拿到旧数据
+        String cacheKey = "ChartController_listMyChartVOByPage";
+        cache.clearCacheByPattern(cacheKey);
         //将消息传给生产者,由消费端进行处理
-        biMessageProducer.sendMessage(String.valueOf(newChartId));
+        biMessageProducer.sendMessage(String.valueOf(newChartId) + "_" + loginUser.getId());
         BiResponse biResponse = new BiResponse();
         biResponse.setChartId(newChartId);
         return ResultUtils.success(biResponse);
     }
-
 
     private static void fileCheck(MultipartFile multipartFile) {
         // 文件名
@@ -443,13 +448,14 @@ public class ChartController {
 
     /**
      * 构建用户输入
+     *
      * @param goal
      * @param chartType
      * @param multipartFile
      * @param chartName
      * @return
      */
-    private String buildUserInput(String goal,String chartType,MultipartFile multipartFile,String chartName) {
+    private String buildUserInput(String goal, String chartType, MultipartFile multipartFile, String chartName) {
 
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
         ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
@@ -493,13 +499,13 @@ public class ChartController {
         queryWrapper.eq(StringUtils.isNotBlank(goal), "goal", goal);
         queryWrapper.eq(StringUtils.isNotBlank(chartType), "chartType", chartType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
-        queryWrapper.eq("isDelete", false);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
     }
 
-    private void updateChartError(long chartId,String message){
+    private void updateChartError(long chartId, String message) {
         Chart chart = new Chart();
         chart.setId(chartId);
         chart.setStatus(ChartConstant.FAILED_STATUS);
@@ -508,7 +514,7 @@ public class ChartController {
         ThrowUtils.throwIf(!isSave, ErrorCode.SYSTEM_ERROR, "更新图表状态为失败出错了！");
     }
 
-    private RMap<String,Object> getCachedResult(String cacheKey) {
+    private RMap<String, Object> getCachedResult(String cacheKey) {
         RMap<String, Object> cache = redissonClient.getMap(cacheKey);
         return cache;
     }
@@ -516,9 +522,8 @@ public class ChartController {
     private void putCachedResult(String cacheKey, Page<Chart> chartPage) {
         //使用Redisson提供的getMap方法从RedissonClient中获取一个RMap实例。
         RMap<String, Object> cache = redissonClient.getMap(cacheKey, MapOptions.defaults());
-        cache.put(cacheKey,chartPage);
+        cache.put(cacheKey, chartPage);
         //60秒清空一次缓存
         cache.expire(60L, TimeUnit.SECONDS);
     }
-
 }
