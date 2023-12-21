@@ -121,6 +121,9 @@ public class ChartController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean b = chartService.removeById(id);
+        //手动清除缓存，避免拿到旧数据
+        String cacheKey = "ChartController_listMyChartVOByPage";
+        cache.clearCacheByPattern(cacheKey);
         return ResultUtils.success(b);
     }
 
@@ -145,6 +148,9 @@ public class ChartController {
         Chart oldchart = chartService.getById(id);
         ThrowUtils.throwIf(oldchart == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = chartService.updateById(chart);
+        //手动清除缓存，避免拿到旧数据
+        String cacheKey = "ChartController_listMyChartVOByPage";
+        cache.clearCacheByPattern(cacheKey);
         return ResultUtils.success(result);
     }
 
@@ -248,6 +254,9 @@ public class ChartController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = chartService.updateById(chart);
+        //手动清除缓存，避免拿到旧数据
+        String cacheKey = "ChartController_listMyChartVOByPage";
+        cache.clearCacheByPattern(cacheKey);
         return ResultUtils.success(result);
     }
 
