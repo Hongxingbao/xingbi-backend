@@ -9,9 +9,14 @@ package com.sing.init.constant;
 public interface ChartConstant {
 
     /**
-     * 模型id
+     * 鱼聪明模型id
      */
-    long MODEL_ID = 1731965085540634626L;
+    long YU_MODEL_ID = 1731965085540634626L;
+
+    /**
+     * 文心一言模型id
+     */
+    Integer BAIDU_MODEL_ID = 14007;
 
     /**
      * 生成图表失败

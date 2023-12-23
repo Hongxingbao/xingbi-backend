@@ -4,9 +4,12 @@ import com.rabbitmq.client.Channel;
 import com.sing.init.common.ErrorCode;
 import com.sing.init.constant.ChartConstant;
 import com.sing.init.exception.BusinessException;
+import com.sing.init.exception.ThrowUtils;
 import com.sing.init.manager.AiManager;
+import com.sing.init.manager.BaiDuAiManager;
 import com.sing.init.model.entity.Chart;
 import com.sing.init.service.ChartService;
+import com.sing.init.utils.ExcelUtils;
 import com.sing.init.websocket.WebSocketServer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +20,11 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -31,6 +37,11 @@ public class BiMessageConsumer {
 
     @Resource
     private AiManager aiManager;
+
+    @Resource
+    private BaiDuAiManager baiDuAiManager;
+
+
 
     @Resource
     private RedissonClient redissonClient;
@@ -68,7 +79,9 @@ public class BiMessageConsumer {
             return;
         }
         // 调用 AI
-        String result = aiManager.dochat(ChartConstant.MODEL_ID, buildUserInput(chart), userId);
+        //String result = aiManager.dochat(ChartConstant.YU_MODEL_ID, buildUserInput(chart), userId);
+        String result = baiDuAiManager.chatSingle(ChartConstant.BAIDU_MODEL_ID, buildBaiduUserInput(chart), userId);
+
         String[] splits = result.split("【【【【【");
         if (splits.length < 3) {
             channel.basicNack(deliveryTag, false, false);
@@ -96,23 +109,7 @@ public class BiMessageConsumer {
     }
 
     /**
-     * 清除缓存
-     *
-     * @param pattern
-     */
-    public void clearCacheByPattern(String pattern) {
-        RKeys keys = redissonClient.getKeys();
-        Iterable<String> matchingKeys = keys.getKeysByPattern(pattern + "*");
-        if (matchingKeys != null) {
-            for (String matchingKey : matchingKeys) {
-                // 删除匹配的键
-                redissonClient.getKeys().delete(matchingKey);
-            }
-        }
-    }
-
-    /**
-     * 构建用户输入
+     * 构建用户输入(鱼聪明)
      *
      * @param chart
      * @return
@@ -136,6 +133,30 @@ public class BiMessageConsumer {
 
         return userInput.toString();
     }
+
+    /**
+     * 构建用户输入(文心一言)
+     *
+     * @param chart
+     * @return
+     */
+    private Map<String,String> buildBaiduUserInput(Chart chart) {
+
+        String goal = chart.getGoal();
+        String chartType = chart.getChartType();
+        String csvData = chart.getChartData();
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
+        //要分析的csv数据
+        Map map = new HashMap();
+        if (StringUtils.isNotBlank(chartType)) {
+            map.put("goal",goal+",请使用："+chartType);
+        } else {
+            map.put("goal",goal);
+        }
+        map.put("data",csvData);
+        return map;
+    }
+
 
     private void handleChartUpdateError(long chartId, String execMessage) {
         Chart updateChartResult = new Chart();

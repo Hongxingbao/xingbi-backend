@@ -20,9 +20,6 @@ public class AiManager {
     private YuCongMingClient yuCongMingClient;
 
     @Resource
-    private UserService userService;
-
-    @Resource
     private ScoreService scoreService;
 
     @Resource

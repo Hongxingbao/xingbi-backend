@@ -14,6 +14,7 @@ import com.sing.init.constant.UserConstant;
 import com.sing.init.exception.BusinessException;
 import com.sing.init.exception.ThrowUtils;
 import com.sing.init.manager.AiManager;
+import com.sing.init.manager.BaiDuAiManager;
 import com.sing.init.manager.RedisLimiterManager;
 import com.sing.init.model.dto.chart.*;
 import com.sing.init.model.entity.Chart;
@@ -36,7 +37,9 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +62,8 @@ public class ChartController {
 
     @Resource
     private AiManager aiManager;
+    @Resource
+    private BaiDuAiManager baiDuAiManager;
 
     @Resource
     private RedisLimiterManager redisLimiterManager;
@@ -283,10 +288,12 @@ public class ChartController {
 
         //要分析的csv数据
         String csvData = ExcelUtils.excelToCsv(multipartFile);
-        String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
+        //String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
+        Map userInput = buildBaiduUserInput(goal, chartType, multipartFile, chartName);
 
         //返回结果
-        String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString(), loginUser.getId());
+        //String result = aiManager.dochat(ChartConstant.YU_MODEL_ID, userInput.toString(), loginUser.getId());//鱼聪明API
+        String result = baiDuAiManager.chatSingle(ChartConstant.BAIDU_MODEL_ID, userInput, loginUser.getId());//文心一言API
 
         String[] split = result.split("【【【【【");
         ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
@@ -343,7 +350,8 @@ public class ChartController {
 
         //要分析的csv数据
         String csvData = ExcelUtils.excelToCsv(multipartFile);
-        String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
+        //String userInput = buildUserInput(goal, chartType, multipartFile, chartName);
+        Map userInput = buildBaiduUserInput(goal, chartType, multipartFile, chartName);
 
         //对ai生成的代码解析成json对象返回给前端
         Chart chart = new Chart();
@@ -371,7 +379,8 @@ public class ChartController {
             }
 
             //调用AI
-            String result = aiManager.dochat(ChartConstant.MODEL_ID, userInput.toString(), loginUser.getId());
+            //String result = aiManager.dochat(ChartConstant.YU_MODEL_ID, userInput.toString(), loginUser.getId());//鱼聪明API
+            String result = baiDuAiManager.chatSingle(ChartConstant.BAIDU_MODEL_ID, userInput, loginUser.getId());//文心一言API
             String[] split = result.split("【【【【【");
             ThrowUtils.throwIf(split.length < 3, ErrorCode.SYSTEM_ERROR, "生成内容出错了");
             //图表信息
@@ -456,7 +465,7 @@ public class ChartController {
     }
 
     /**
-     * 构建用户输入
+     * 构建用户输入（鱼聪明）
      *
      * @param goal
      * @param chartType
@@ -483,6 +492,34 @@ public class ChartController {
 
         return userInput.toString();
     }
+
+    /**
+     * 构建用户输入（文心一言）
+     *
+     * @param goal
+     * @param chartType
+     * @param multipartFile
+     * @param chartName
+     * @return
+     */
+    private Map<String,String> buildBaiduUserInput(String goal, String chartType, MultipartFile multipartFile, String chartName) {
+
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "未指定分析目标");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartName) && chartName.length() > 30, ErrorCode.PARAMS_ERROR, "图表名称过长");
+
+        //要分析的csv数据
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        Map map = new HashMap();
+        if (StringUtils.isNotBlank(chartType)) {
+            map.put("goal",goal+",请使用："+chartType);
+        } else {
+            map.put("goal",goal);
+        }
+        map.put("data",csvData);
+
+        return map;
+    }
+
 
     /**
      * 获取查询包装类
