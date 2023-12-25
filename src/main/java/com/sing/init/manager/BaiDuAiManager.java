@@ -50,7 +50,7 @@ public class BaiDuAiManager {
         ThrowUtils.throwIf(chatResponse == null, ErrorCode.SYSTEM_ERROR, "AI响应错误");
         String cleanedJsonString = removeCodeBlocks(chatResponse.getResult());
         System.out.println("成功结果："+cleanedJsonString);
-        scoreService.deductPoints(userId, 5L);//调用成功后扣除积分
+        scoreService.deductPoints(userId, 20L);//调用成功后扣除积分
         //手动清除缓存，避免拿到旧数据
         String cacheKey = "ChartController_listMyChartVOByPage";
         cache.clearCacheByPattern(cacheKey);

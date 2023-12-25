@@ -40,7 +40,7 @@ public class ScoreServiceImpl extends ServiceImpl<ScoreMapper, Score>
         ThrowUtils.throwIf(scoreTotal == 100, ErrorCode.PARAMS_ERROR, "领取失败，已达上线");
         UpdateWrapper<Score> updateWrapper = new UpdateWrapper();
         updateWrapper
-                .set("scoreTotal", scoreTotal + 10)//此处暂时写死签到积分
+                .set("scoreTotal", scoreTotal + 20)//此处暂时写死签到积分
                 .set("isSign", 1)
                 .eq("userId", userId);
         boolean r = this.update(updateWrapper);

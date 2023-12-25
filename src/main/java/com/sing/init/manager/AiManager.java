@@ -34,7 +34,7 @@ public class AiManager {
         //获取响应结果
         BaseResponse<DevChatResponse> response = yuCongMingClient.doChat(devChatRequest);
         ThrowUtils.throwIf(response == null, ErrorCode.SYSTEM_ERROR, "AI响应错误");
-        scoreService.deductPoints(userId, 5L);
+        scoreService.deductPoints(userId, 20L);
         //手动清除缓存，避免拿到旧数据
         String cacheKey = "ChartController_listMyChartVOByPage";
         cache.clearCacheByPattern(cacheKey);
