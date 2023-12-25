@@ -16,8 +16,8 @@ public class BiInitMain {
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("192.168.88.130");
-        factory.setUsername("itcast");
-        factory.setPassword("123321");
+        factory.setUsername("xing");
+        factory.setPassword("112233");
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
         String EXCHANGE_NAME = BiMqConstant.BI_EXCHANGE_NAME;
