@@ -1,7 +1,5 @@
 package com.sing.init.service.impl;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -11,8 +9,6 @@ import com.sing.init.mapper.ScoreMapper;
 import com.sing.init.model.entity.Score;
 import com.sing.init.service.ScoreService;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
 
 /**
  * @author 24840

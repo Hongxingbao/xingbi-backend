@@ -3,17 +3,13 @@ package com.sing.init.controller;
 import com.gearwenxin.client.PromptBotClient;
 import com.gearwenxin.client.ernie.ErnieBot4Client;
 import com.gearwenxin.client.stable.StableDiffusionXLClient;
-import com.gearwenxin.entity.chatmodel.ChatErnieRequest;
 import com.gearwenxin.entity.chatmodel.ChatPromptRequest;
 import com.gearwenxin.entity.enums.SamplerType;
 import com.gearwenxin.entity.request.ImageBaseRequest;
-import com.gearwenxin.entity.request.PromptRequest;
 import com.gearwenxin.entity.response.ChatResponse;
 import com.gearwenxin.entity.response.ImageResponse;
 import com.gearwenxin.entity.response.PromptResponse;
-import com.gearwenxin.entity.response.PromptResult;
 import com.sing.init.common.BaseResponse;
-import com.sing.init.common.ResultUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +31,7 @@ public class ChatController { // 要调用的模型的客户端（示例为文�
     // 要调用的模型的客户端
     @Resource
     private PromptBotClient promptClient;
+
 
     // 模板对话
     @PostMapping

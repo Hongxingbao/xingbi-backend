@@ -9,18 +9,15 @@ import com.sing.init.manager.AiManager;
 import com.sing.init.manager.BaiDuAiManager;
 import com.sing.init.model.entity.Chart;
 import com.sing.init.service.ChartService;
-import com.sing.init.utils.ExcelUtils;
 import com.sing.init.websocket.WebSocketServer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -40,7 +37,6 @@ public class BiMessageConsumer {
 
     @Resource
     private BaiDuAiManager baiDuAiManager;
-
 
 
     @Resource
@@ -141,7 +137,7 @@ public class BiMessageConsumer {
      * @param chart
      * @return
      */
-    private Map<String,String> buildBaiduUserInput(Chart chart) {
+    private Map<String, String> buildBaiduUserInput(Chart chart) {
 
         String goal = chart.getGoal();
         String chartType = chart.getChartType();
@@ -150,11 +146,11 @@ public class BiMessageConsumer {
         //要分析的csv数据
         Map map = new HashMap();
         if (StringUtils.isNotBlank(chartType)) {
-            map.put("goal",goal+",请使用："+chartType);
+            map.put("goal", goal + ",请使用：" + chartType);
         } else {
-            map.put("goal",goal);
+            map.put("goal", goal);
         }
-        map.put("data",csvData);
+        map.put("data", csvData);
         return map;
     }
 

@@ -1,28 +1,18 @@
 package com.sing.init.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.sing.init.annotation.AuthCheck;
 import com.sing.init.common.BaseResponse;
-import com.sing.init.common.DeleteRequest;
-import com.sing.init.common.ErrorCode;
 import com.sing.init.common.ResultUtils;
-import com.sing.init.constant.UserConstant;
-import com.sing.init.exception.BusinessException;
-import com.sing.init.exception.ThrowUtils;
-import com.sing.init.model.dto.user.*;
 import com.sing.init.model.entity.User;
-import com.sing.init.model.vo.LoginUserVO;
-import com.sing.init.model.vo.UserVO;
 import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 /**
  * 积分接口

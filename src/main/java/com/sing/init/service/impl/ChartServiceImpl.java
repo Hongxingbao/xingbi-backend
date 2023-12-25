@@ -12,13 +12,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 /**
-* @author 24840
-* @description 针对表【chart(图表信息表)】的数据库操作Service实现
-* @createDate 2023-12-01 15:03:53
-*/
+ * @author 24840
+ * @description 针对表【chart(图表信息表)】的数据库操作Service实现
+ * @createDate 2023-12-01 15:03:53
+ */
 @Service
 public class ChartServiceImpl extends ServiceImpl<ChartMapper, Chart>
-    implements ChartService {
+        implements ChartService {
 
     @Override
     public void validChart(Chart chart, boolean add) {

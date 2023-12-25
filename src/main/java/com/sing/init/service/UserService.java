@@ -6,7 +6,6 @@ import com.sing.init.model.dto.user.UserQueryRequest;
 import com.sing.init.model.entity.User;
 import com.sing.init.model.vo.LoginUserVO;
 import com.sing.init.model.vo.UserVO;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;

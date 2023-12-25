@@ -3,7 +3,6 @@ package com.sing.init.manager;
 import com.sing.init.common.ErrorCode;
 import com.sing.init.exception.ThrowUtils;
 import com.sing.init.service.ScoreService;
-import com.sing.init.service.UserService;
 import com.sing.init.utils.ClearCache;
 import com.yupi.yucongming.dev.client.YuCongMingClient;
 import com.yupi.yucongming.dev.common.BaseResponse;

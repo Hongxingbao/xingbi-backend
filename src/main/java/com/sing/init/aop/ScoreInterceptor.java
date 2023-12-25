@@ -20,7 +20,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * 积分控制 AOP
+ * 积分控制 AOP（由于不在spring上下文，取不到request，暂且搁置）
  *
  * @author xing
  **/

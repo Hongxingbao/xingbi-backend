@@ -9,22 +9,11 @@ import com.sing.init.common.ResultUtils;
 import com.sing.init.constant.UserConstant;
 import com.sing.init.exception.BusinessException;
 import com.sing.init.exception.ThrowUtils;
-import com.sing.init.model.dto.user.UserAddRequest;
-import com.sing.init.model.dto.user.UserLoginRequest;
-import com.sing.init.model.dto.user.UserQueryRequest;
-import com.sing.init.model.dto.user.UserRegisterRequest;
-import com.sing.init.model.dto.user.UserUpdateMyRequest;
-import com.sing.init.model.dto.user.UserUpdateRequest;
+import com.sing.init.model.dto.user.*;
 import com.sing.init.model.entity.User;
 import com.sing.init.model.vo.LoginUserVO;
 import com.sing.init.model.vo.UserVO;
-import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-
 import com.sing.init.utils.BaseContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,17 +21,16 @@ import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 用户接口
  *
  * @author xing
-
  */
 @RestController
 @RequestMapping("/user")
@@ -95,13 +83,13 @@ public class UserController {
         }
         LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
         BaseContext.setCurrentId(loginUserVO.getId());
-        log.info("用户id："+BaseContext.getCurrentId());
+        log.info("用户id：" + BaseContext.getCurrentId());
         request.getSession().setAttribute("userid", BaseContext.getCurrentId());
         Long userid = (Long) request.getSession().getAttribute("userid");
         log.info("用户id是：" + userid);
 
         RMap<String, Object> cache = redissonClient.getMap(String.valueOf(loginUserVO.getId()), MapOptions.defaults());
-        cache.put(String.valueOf(loginUserVO.getId()),loginUserVO);
+        cache.put(String.valueOf(loginUserVO.getId()), loginUserVO);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -184,7 +172,7 @@ public class UserController {
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
-            HttpServletRequest request) {
+                                            HttpServletRequest request) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -237,7 +225,7 @@ public class UserController {
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<User>> listUserByPage(@RequestBody UserQueryRequest userQueryRequest,
-            HttpServletRequest request) {
+                                                   HttpServletRequest request) {
         long current = userQueryRequest.getCurrent();
         long size = userQueryRequest.getPageSize();
         Page<User> userPage = userService.page(new Page<>(current, size),
@@ -254,7 +242,7 @@ public class UserController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest,
-            HttpServletRequest request) {
+                                                       HttpServletRequest request) {
         if (userQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -281,7 +269,7 @@ public class UserController {
      */
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,
-            HttpServletRequest request) {
+                                              HttpServletRequest request) {
         if (userUpdateMyRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

@@ -17,17 +17,17 @@ import com.sing.init.model.vo.UserVO;
 import com.sing.init.service.ScoreService;
 import com.sing.init.service.UserService;
 import com.sing.init.utils.SqlUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.sing.init.constant.UserConstant.*;
 
@@ -92,7 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             score.setScoreTotal(100l);
             score.setUserId(user.getId());
             boolean scoreResult = scoreService.save(score);
-            ThrowUtils.throwIf(!scoreResult,ErrorCode.OPERATION_ERROR,"注册积分异常");
+            ThrowUtils.throwIf(!scoreResult, ErrorCode.OPERATION_ERROR, "注册积分异常");
             return user.getId();
         }
     }
