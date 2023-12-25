@@ -23,9 +23,10 @@ public class BiInitMain {
         String EXCHANGE_NAME = BiMqConstant.BI_EXCHANGE_NAME;
         channel.exchangeDeclare(EXCHANGE_NAME, "direct");
 
-        // 创建队列，随机分配一个队列名称
+        // 创建队列，指定队列名称
         String queueName = BiMqConstant.BI_QUEUE_NAME;
         channel.queueDeclare(queueName, true, false, false, null);
+        //将队列和交换机绑定，并指定RoutingKey
         channel.queueBind(queueName, EXCHANGE_NAME, BiMqConstant.BI_ROUTING_KEY);
     }
 }
