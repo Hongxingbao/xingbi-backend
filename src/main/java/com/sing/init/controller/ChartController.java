@@ -220,7 +220,7 @@ public class ChartController {
         // 检查缓存,保证每次点击缓存的数据不一样，否则会导致点击不同页数返回的数据相同
         String cacheKey = "ChartController_listMyChartVOByPage" + current + size;
         RMap<String, Object> cachedResult = getCachedResult(cacheKey);
-        if (cachedResult.size() > 0) {
+        if (cachedResult.size() > 0 && chartQueryRequest.getChartName()==null) {
             chartPage = (Page<Chart>) cachedResult.get(cacheKey);
             return ResultUtils.success(chartPage);
         }
@@ -447,6 +447,22 @@ public class ChartController {
         biMessageProducer.sendMessage(String.valueOf(newChartId) + "_" + loginUser.getId());
         BiResponse biResponse = new BiResponse();
         biResponse.setChartId(newChartId);
+        return ResultUtils.success(biResponse);
+    }
+
+    /**
+     * 生成失败重试(此处通过发送消息到MQ的方式)
+     * @param chartId
+     * @return
+     */
+    @GetMapping("/retry")
+    public BaseResponse<BiResponse> retry(long chartId) {
+
+        Chart chart = chartService.getById(chartId);
+        //将消息传给生产者,由消费端进行处理
+        biMessageProducer.sendMessage(String.valueOf(chartId) + "_" + chart.getUserId());
+        BiResponse biResponse = new BiResponse();
+        biResponse.setChartId(chartId);
         return ResultUtils.success(biResponse);
     }
 

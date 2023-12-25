@@ -95,6 +95,7 @@ public class BiMessageConsumer {
         updateChartResult.setGenChart(genChart);
         updateChartResult.setGenResult(genResult);
         updateChartResult.setStatus(ChartConstant.SUCCEED_STATUS);
+        updateChartResult.setExecMessage("AI生成成功");
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {
             channel.basicNack(deliveryTag, false, false);
