@@ -88,6 +88,8 @@ public class BiMessageConsumer {
 
         String[] splits = result.split("【【【【【");
         if (splits.length < 3) {
+            //此处也可以进行重试，但是有一定风险，万一AI一直生成不成功，则会反复调用AI接口，导致产生大量费用...
+            //channel.basicNack(deliveryTag, false, true);
             channel.basicNack(deliveryTag, false, false);
             handleChartUpdateError(chart.getId(), "AI 生成错误");
             return;
