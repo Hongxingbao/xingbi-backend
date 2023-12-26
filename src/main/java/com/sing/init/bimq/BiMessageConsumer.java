@@ -42,13 +42,21 @@ public class BiMessageConsumer {
     @Resource
     private RedissonClient redissonClient;
 
+    /**
+     *
+     * @param message 接收到的消息内容。
+     * @param channel 与 RabbitMQ 通信的通道对象。
+     * @param deliveryTag 消息的交付标签，用来唯一标识消息的标签,用于手动确认消息。
+     */
     // 指定程序监听的消息队列和确认机制
-    @SneakyThrows
-    @RabbitListener(queues = {BiMqConstant.BI_QUEUE_NAME}, ackMode = "MANUAL")
+    @SneakyThrows //用于简化在方法中抛出异常的代码
+    @RabbitListener(queues = {BiMqConstant.BI_QUEUE_NAME}, ackMode = "MANUAL")//ackMode = "MANUAL"：指定消息确认模式为手动确认，即需要在方法中手动调用确认或拒绝消息的方法。
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         log.info("receiveMessage message = {}", message);
         if (StringUtils.isBlank(message)) {
             // 如果失败，消息拒绝
+            //第一个布尔值 false：只想拒绝当前无法处理的消息，而不是其他消息。如果为 true，表示拒绝所有比当前消息具有更小或相同交付标签的消息。
+            //第二个布尔值 false：消息不会重新排队，而是被直接丢弃或移动到死信队列（当前配置是直接丢弃），如果为 true，消息会被重新放回队列，可以重新被消费者获取。
             channel.basicNack(deliveryTag, false, false);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "消息为空");
         }
@@ -98,10 +106,7 @@ public class BiMessageConsumer {
             handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
         }
         webSocketServer.sendToAllClient("图表生成好啦，快去看看吧！");
-//        //手动清除缓存，避免拿到旧数据
-//        String cacheKey = "ChartController_listMyChartVOByPage";
-//        clearCacheByPattern(cacheKey);
-        // 消息确认
+        // 消息确认，第二个参数表示当前消息已成功被消费者处理，不再需要重新发送给其他消费者，因此可以从队列中删除。
         channel.basicAck(deliveryTag, false);
     }
 

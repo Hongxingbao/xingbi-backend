@@ -16,6 +16,7 @@ public class BiMessageProducer {
      * @param message
      */
     public void sendMessage(String message) {
+        //发送消息指定交换机名和RoutingKey
         rabbitTemplate.convertAndSend(BiMqConstant.BI_EXCHANGE_NAME, BiMqConstant.BI_ROUTING_KEY, message);
     }
 
