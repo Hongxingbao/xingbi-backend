@@ -49,8 +49,7 @@ public class BiMessageConsumer {
      */
     // 指定程序监听的消息队列和确认机制
     @SneakyThrows //用于简化在方法中抛出异常的代码
-    @RabbitListener(queues = {BiMqConstant.BI_QUEUE_NAME}, ackMode = "MANUAL")
-//ackMode = "MANUAL"：指定消息确认模式为手动确认，即需要在方法中手动调用确认或拒绝消息的方法。
+    @RabbitListener(queues = {BiMqConstant.BI_QUEUE_NAME}, ackMode = "MANUAL")//ackMode = "MANUAL"：指定消息确认模式为手动确认，即需要在方法中手动调用确认或拒绝消息的方法,确保消息在被正确处理后才被确认
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
 
         log.info("receiveMessage message = {}", message);
@@ -89,9 +88,10 @@ public class BiMessageConsumer {
 
         String[] splits = result.split("【【【【【");
         if (splits.length < 3) {
-            //此处进行重试，最多重试一次
+            //此处由于生成时间比较长，所以只重试一次。由于不抛异常，且使用MANUAL确认模式，因此不采用配置的方式设置重试。
+            log.info("准备重新分析...");
             if (deliveryTag > 1) {
-                channel.basicNack(deliveryTag, false, false);
+                channel.basicNack(deliveryTag, false, false);//放入死信队列
             }
             channel.basicNack(deliveryTag, false, true);
             handleChartUpdateError(chart.getId(), "AI 生成错误");
