@@ -16,46 +16,48 @@ spring:
     # 30 天过期
     timeout: 2592000
   # 数据库配置
-  # todo 需替换配置
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/sing_bi
-    username: root
-    password: 1234
+    driver-class-name: ${spring.datasource.driver-class-name}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
   # Redis 配置
   # todo 需替换配置，然后取消注释
   redis:
-    database: 1
-    host: localhost
-    port: 6379
-    timeout: 5000
-    password: asdfghjkl
-  # Elasticsearch 配置
-  # todo 需替换配置，然后取消注释
-#  elasticsearch:
-#    uris: http://localhost:9200
-#    username: root
-#    password: 123456
+    database: ${spring.redis.database}
+    host: ${spring.redis.host}
+    port: ${spring.redis.port}
+    timeout: ${spring.redis.timeout}
+    password: ${spring.redis.password}
   # 文件上传
   servlet:
     multipart:
       # 大小限制
       max-file-size: 10MB
   rabbitmq:
-    host: 192.168.88.130 # 主机名
-    port: 5672 # 端口
-    virtual-host: / # 虚拟主机
-    username: itcast # 用户名
-    password: 123321 # 密码
+    host: ${spring.rabbitmq.host} # 主机名
+    port: ${spring.rabbitmq.port} # 端口
+    virtual-host: ${spring.rabbitmq.virtual-host} # 虚拟主机
+    username: ${spring.rabbitmq.username} # 用户名
+    password: ${spring.rabbitmq.password} # 密码
+#    listener:
+#      simple:
+#        retry:
+#          enabled: true #开启消费者失败重试
+#          initial-interval: 1000 #初始的失败等待时长为1秒
+#          multiplier: 1 #失败的等待时长倍数，下次等待时长 = multiplier * last - interval
+#          max-attempts: 1 #最大重试次数
+#          stateless: true # true无状态；false有状态，如果业务中包含事务，这里改为false
+
 server:
-  address: 0.0.0.0
-  port: 8101
+  address: ${server.address}
+  port: ${server.port}
   servlet:
-    context-path: /api
+    context-path: ${server.servlet.context-path}
     # cookie 30 天过期
     session:
       cookie:
-        max-age: 2592000
+        max-age: ${server.servlet.session.cookie.max-age}
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
@@ -65,36 +67,20 @@ mybatis-plus:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名
       logic-delete-value: 1 # 逻辑已删除值（默认为 1）
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
-# 微信相关
-wx:
-  # 微信公众平台
-  # todo 需替换配置
-  mp:
-    token: xxx
-    aesKey: xxx
-    appId: xxx
-    secret: xxx
-    config-storage:
-      http-client-type: HttpClient
-      key-prefix: wx
-      redis:
-        host: 127.0.0.1
-        port: 6379
-      type: Memory
-  # 微信开放平台
-  # todo 需替换配置
-  open:
-    appId: xxx
-    appSecret: xxx
+
 # 对象存储
-# todo 需替换配置
-cos:
-  client:
-    accessKey: xxx
-    secretKey: xxx
-    region: xxx
-    bucket: xxx
+xing:
+  alioss:
+    endpoint: ${xing.alioss.endpoint}
+    access-key-id: ${xing.alioss.access-key-id}
+    access-key-secret: ${xing.alioss.access-key-secret}
+    bucket-name: ${xing.alioss.bucket-name}
 yuapi:
   client:
-    access-key: xxxx
-    secret-key: xxxx
+    access-key: ${yuapi.client.access-key}
+    secret-key: ${yuapi.client.secret-key}
+# 文心一言AK、SK
+gear:
+  wenxin:
+    api-key: ${gear.wenxin.api-key}
+    secret-key: ${gear.wenxin.secret-key}
