@@ -9,7 +9,6 @@ import com.gearwenxin.entity.request.ImageBaseRequest;
 import com.gearwenxin.entity.response.ChatResponse;
 import com.gearwenxin.entity.response.ImageResponse;
 import com.gearwenxin.entity.response.PromptResponse;
-import com.sing.init.bimq.BiMessageProducer;
 import com.sing.init.common.BaseResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,8 +32,6 @@ public class ChatController { // 要调用的模型的客户端（示例为文�
     @Resource
     private PromptBotClient promptClient;
 
-    @Resource
-    private BiMessageProducer biMessageProducer;
 
 //    @GetMapping("/testRetrySimpleQueue")
 //    public String testRetrySimpleQueue() {

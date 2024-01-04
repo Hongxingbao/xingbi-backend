@@ -1,15 +1,14 @@
 package com.sing.init.bimq;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-
 @Component
+@RequiredArgsConstructor
 public class BiMessageProducer {
 
-    @Resource
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * 发送消息

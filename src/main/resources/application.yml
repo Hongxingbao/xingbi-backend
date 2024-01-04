@@ -48,7 +48,6 @@ spring:
 #          multiplier: 1 #失败的等待时长倍数，下次等待时长 = multiplier * last - interval
 #          max-attempts: 1 #最大重试次数
 #          stateless: true # true无状态；false有状态，如果业务中包含事务，这里改为false
-
 server:
   address: ${server.address}
   port: ${server.port}
@@ -60,13 +59,14 @@ server:
         max-age: ${server.servlet.session.cookie.max-age}
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: false
+    map-underscore-to-camel-case: false #禁用数据库列名到Java实体类字段名的映射转换，即保持原样
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名
       logic-delete-value: 1 # 逻辑已删除值（默认为 1）
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
+      update-strategy: not_null #表示只有在实体类字段不为null时才会被更新。这是一种乐观锁的策略，可以避免覆盖其他线程的更新。
 
 # 对象存储
 xing:
@@ -84,3 +84,10 @@ gear:
   wenxin:
     api-key: ${gear.wenxin.api-key}
     secret-key: ${gear.wenxin.secret-key}
+logging:
+  level:
+    com.sing.init: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: "logs/${spring.application.name}"

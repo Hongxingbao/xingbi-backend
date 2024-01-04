@@ -40,9 +40,6 @@ public class UserController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private RedissonClient redissonClient;
-
     /**
      * 用户注册
      *
@@ -83,13 +80,9 @@ public class UserController {
         }
         LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
         BaseContext.setCurrentId(loginUserVO.getId());
-        log.info("用户id：" + BaseContext.getCurrentId());
-        request.getSession().setAttribute("userid", BaseContext.getCurrentId());
-        Long userid = (Long) request.getSession().getAttribute("userid");
-        log.info("用户id是：" + userid);
 
-        RMap<String, Object> cache = redissonClient.getMap(String.valueOf(loginUserVO.getId()), MapOptions.defaults());
-        cache.put(String.valueOf(loginUserVO.getId()), loginUserVO);
+//        RMap<String, Object> cache = redissonClient.getMap(String.valueOf(loginUserVO.getId()), MapOptions.defaults());
+//        cache.put(String.valueOf(loginUserVO.getId()), loginUserVO);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -120,10 +113,6 @@ public class UserController {
         User user = userService.getLoginUser(request);
         return ResultUtils.success(userService.getLoginUserVO(user));
     }
-
-    // endregion
-
-    // region 增删改查
 
     /**
      * 创建用户
@@ -257,8 +246,6 @@ public class UserController {
         userVOPage.setRecords(userVO);
         return ResultUtils.success(userVOPage);
     }
-
-    // endregion
 
     /**
      * 更新个人信息

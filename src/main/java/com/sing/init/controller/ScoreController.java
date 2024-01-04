@@ -24,10 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/score")
 @Slf4j
 public class ScoreController {
-
     @Resource
     private UserService userService;
-
     @Resource
     private ScoreService scoreService;
 

@@ -31,14 +31,10 @@ public class BiMessageConsumer {
     private ChartService chartService;
     @Resource
     private WebSocketServer webSocketServer;
-
     @Resource
     private AiManager aiManager;
-
     @Resource
     private BaiDuAiManager baiDuAiManager;
-
-
     @Resource
     private RedissonClient redissonClient;
 
